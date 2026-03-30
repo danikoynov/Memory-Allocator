@@ -109,18 +109,27 @@ This directory is automatically created during compilation and should not be com
 
 ---
 
-# High-Level Design
+## High-Level Design
 
-The allocator uses a **free list**.
+This allocator is built around a **free-list design**.
 
-A free list is a linked list of blocks that are currently available for allocation. Each free block begins with a `FreeNode` header that stores:
+At a high level, the allocator manages memory as a collection of blocks. Some blocks are currently free and available for future allocations, while others are occupied and have been returned to the user.
 
-- the payload size of the free block
-- a pointer to the next free block
+The allocator keeps track of free memory using a linked list called the **free list**. Each node in this list represents one free block. The list is kept sorted by memory address, which makes it easier to merge neighboring free blocks when memory is returned.
 
-Allocated blocks begin with a `Metadata` header that stores the size of the user allocation.
+When the user requests memory, the allocator searches the free list for a block that is large enough. If it finds one, it uses that block to satisfy the request. If the block is larger than necessary, it is split into two parts: one part becomes the allocated block, and the other remains in the free list as a smaller free block. If the block is too small to split safely, the allocator uses the whole block.
 
-The allocator keeps a global pointer:
+Each allocated block stores a small piece of metadata before the memory returned to the user. This metadata records the size of the allocation, so that when the user frees the block later, the allocator knows how large that block is.
 
-```cpp
-FreeNode* front = nullptr;
+When memory is freed, the allocator converts the block back into a free-list node and reinserts it into the free list in the correct address order. After reinsertion, it attempts to **coalesce** the block with neighboring free blocks if they are directly adjacent in memory. This helps reduce fragmentation and recover larger continuous regions of free memory.
+
+If no existing free block is large enough to satisfy an allocation request, the allocator requests an additional region of memory from the operating system using `VirtualAlloc`. That new region is then inserted into the free list and the allocation is retried.
+
+Overall, the design demonstrates the core ideas behind custom memory allocators:
+
+- requesting raw memory from the OS
+- managing free memory explicitly
+- storing allocation metadata
+- splitting blocks during allocation
+- reinserting and merging blocks during deallocation
+- handling fragmentation through coalescing
