@@ -1,9 +1,11 @@
-add_executable(test_allocator
-    test_allocator.cpp
-)
+add_executable(test_allocate test_allocate.cpp)
+add_executable(test_multiple_allocates test_multiple_allocates.cpp)
+add_executable(test_allocate_free test_allocate_free.cpp)
 
-target_link_libraries(test_allocator
-    PRIVATE allocator
-)
+target_link_libraries(test_allocate PRIVATE allocator)
+target_link_libraries(test_multiple_allocates PRIVATE allocator)
+target_link_libraries(test_allocate_free PRIVATE allocator)
 
-add_test(NAME test_allocator COMMAND test_allocator)
+add_test(NAME test_allocate COMMAND test_allocate)
+add_test(NAME test_multiple_allocates COMMAND test_multiple_allocates)
+add_test(NAME test_allocate_free COMMAND test_allocate_free)
